@@ -47,8 +47,7 @@ class QtuneCommand(NNToolShellBase):
     parser_tune.add_argument('step',
                              help='step to tune',
                              completer_method=node_step_or_name_completer)
-    parser_tune_sub = parser_tune.add_subparsers(help="different elements that can be tuned",
-                                                 required=True)
+    parser_tune_sub = parser_tune.add_subparsers(help="different elements that can be tuned")
     parser_tune_q = parser_tune_sub.add_parser('param', help='tune quantization parameters')
     parser_tune_q.set_defaults(tune='q')
     parser_tune_q.add_argument('parameter',

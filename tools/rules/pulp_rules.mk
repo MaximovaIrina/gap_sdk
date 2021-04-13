@@ -251,12 +251,12 @@ profiler:
 
 #$(INSTALL_DIR)/runner/run_gapuino.sh $(BUILDDIR) $(BIN) $(RAW_IMAGE_PLPBRIDGE_FLAGS)  $(PLPBRIDGE_FLAGS) $(PLPBRIDGE_EXTRA_FLAGS)
 
-$(BIN).s: $(BIN)
+$(BIN).st: $(BIN)
 	$(OBJDUMP) $(OBJDUMP_OPT) $< > $@
 	$(SIZE) $(SIZE_OPT) $< > $(BIN).size
 	$(NM) $(NM_OPT) $< >> $(BIN).size
 
-disdump: $(BIN).s
+disdump: $(BIN).st
 
 clean::
 	@rm -rf $(OBJECTS) $(PROGRAM)

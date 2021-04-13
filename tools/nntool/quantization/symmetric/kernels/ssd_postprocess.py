@@ -1,18 +1,14 @@
 # Copyright (C) 2020  GreenWaves Technologies, SAS
-
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as
 # published by the Free Software Foundation, either version 3 of the
 # License, or (at your option) any later version.
-
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import numpy as np
 from graph.types import SSDDetectorParameters
 from quantization.kernels.kernel_base import (KernelBase, params_type,
@@ -22,8 +18,6 @@ from utils.exp_17_15 import exp_fp_17_15
 from utils.ssd_utils import (CNTX_IDX, CNTY_IDX, H_IDX, W_IDX, XMAX_IDX,
                              XMIN_IDX, YMAX_IDX, YMIN_IDX, convert_cors2cnts,
                              rect_intersect_area, rect_union_area)
-
-
 @params_type(SSDDetectorParameters)
 @quantization('symmetric')
 class SSDDetectorSymmetric(KernelBase):
@@ -41,28 +35,23 @@ class SSDDetectorSymmetric(KernelBase):
         decoded_bboxes, valid_scores = cls.decoder(
             params, qrec, offsets, anchors, scores, anchors_type='centers')
         out_boxes, out_scores, out_classes = cls.nms(params, qrec, decoded_bboxes, valid_scores)
-        out_count = np.array([len(out_classes)])
+        out_count = np.array([sum(out_classes != 0)])
         return qrec.get_outputs(params, [out_boxes, out_classes, out_scores, out_count], ktype="symmetric")
-
     @classmethod
     def decoder(cls, params, qrec, offsets, anchors, scores, anchors_type='centers'):
         if anchors_type == 'centers':
             anchors_cnts = anchors
         else:
             anchors_cnts = convert_cors2cnts(anchors)
-
         out_boxes_q = qrec.out_qs[0]
-
         scores_q = qrec.in_qs[1]
         score_threshold = scores_q.quantize(params.nms_score_threshold)
-
         # keep only the offsets with score > threshold
         bboxes_indices = np.arange(offsets.shape[0])
         valid_indices = bboxes_indices[np.any(scores > score_threshold, axis=1)]
         valid_scores = scores[valid_indices]
         valid_offsets = offsets[valid_indices]
         valid_anchors = anchors_cnts[valid_indices]
-
         qrec.set_scales(params)
         #  xcnt, ycnt --> Q14
         #  xcnt = (So*O * Sa*Aw)/params.x_scale + Sa*Ax = So*Sa/params.x_scale (O*Aw + x_scale/So * Ax) =
@@ -76,7 +65,6 @@ class SSDDetectorSymmetric(KernelBase):
             np.multiply(valid_offsets[:, CNTY_IDX], valid_anchors[:, H_IDX], dtype=np.int32) +
             qrec.scale_y_anc_q.apply_scales(valid_anchors[:, CNTY_IDX])
         )
-
         #  half_h, half_w --> Q14
         #  half_h = exp(So*Off / params.h_scale) * Sa*A = Sa/So * exp(So/params.h_scale *O) * A =
         #           (scale_ao * (A* exp17.15(scale_h*O<<15-scale_hNorm))>>scale_aoNorm) =
@@ -91,7 +79,6 @@ class SSDDetectorSymmetric(KernelBase):
             exp_h, valid_anchors[:, H_IDX], dtype=np.int32)) >> 1
         half_w = qrec.scale_ao_q.apply_scales(np.multiply(
             exp_w, valid_anchors[:, W_IDX], dtype=np.int32)) >> 1
-
         # min-max or corners format: required for nms
         decoded_anchors = np.zeros_like(valid_anchors, dtype=out_boxes_q.dtype)
         decoded_anchors[:, YMIN_IDX] = ycenter - half_h
@@ -99,7 +86,6 @@ class SSDDetectorSymmetric(KernelBase):
         decoded_anchors[:, XMIN_IDX] = xcenter - half_w
         decoded_anchors[:, XMAX_IDX] = xcenter + half_w
         return decoded_anchors, valid_scores
-
     @classmethod
     def nms(cls, params, qrec, decoded_bboxes, valid_scores):
         scores_q = qrec.in_qs[1]
@@ -116,7 +102,6 @@ class SSDDetectorSymmetric(KernelBase):
             # apply confidence threshold
             valid_scores_indices = bboxes_indices[class_scores > score_threshold]
             class_scores = class_scores[valid_scores_indices]
-
             # sort the confidences freater than the confidence threshold
             args = np.argsort(class_scores)[::-1]  # sort the confidences and
             inds = valid_scores_indices[args]     # back to the original indices
@@ -144,8 +129,10 @@ class SSDDetectorSymmetric(KernelBase):
             out_scores = np.concatenate(out_scores)
             # keep only the max_detection most probables
             args = np.argsort(out_scores)[::-1]
+            if len(args) < params.max_detections:
+                return np.pad(out_boxes[args], ((0, params.max_detections-len(args)), (0, 0)), 'constant'), \
+                    np.pad(out_scores[args], (0, params.max_detections-len(args)), 'constant'), \
+                    np.pad(out_classes[args], (0, params.max_detections-len(args)), 'constant')
             args = args[:params.max_detections]
-            out_boxes = out_boxes[args]
-            out_scores = out_scores[args]
-            out_classes = out_classes[args]
-        return out_boxes, out_scores, out_classes
+            return out_boxes[args], out_scores[args], out_classes[args]
+        return np.zeros((params.max_detections, 4)), np.zeros(params.max_detections), np.zeros(params.max_detections)

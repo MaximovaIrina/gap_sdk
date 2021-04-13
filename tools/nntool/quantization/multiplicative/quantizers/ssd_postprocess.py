@@ -35,4 +35,4 @@ class SSDDetectorParametersMult(MultQuantizionHandler):
         o_boxes_qtype = QType(min_val=-2, max_val=2, dtype=np.int16, scale=2**(-14))
         o_scores_qtype = in_qs[1]
         o_class_qtype = QType(scale=1, dtype=np.int8)
-        return MultSSDDetectorQuantizationRecord(in_qs=in_qs, out_qs=[o_boxes_qtype, o_scores_qtype, o_class_qtype, o_class_qtype])
+        return MultSSDDetectorQuantizationRecord(in_qs=in_qs, out_qs=[o_boxes_qtype, o_class_qtype, o_scores_qtype, o_class_qtype])
