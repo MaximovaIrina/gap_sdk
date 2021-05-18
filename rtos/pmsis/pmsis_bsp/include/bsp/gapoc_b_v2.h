@@ -43,7 +43,7 @@
 #define CONFIG_SPIRAM_SPI_ITF   0
 #define CONFIG_SPIRAM_SPI_CS    1
 #define CONFIG_SPIRAM_START     0
-#define CONFIG_SPIRAM_SIZE     (1<<20)
+#define CONFIG_SPIRAM_SIZE     (1<<23)
 
 #define CONFIG_SPIFLASH_SPI_ITF     0
 #define CONFIG_SPIFLASH_SPI_CS      0
