@@ -149,7 +149,7 @@ void Ker_SSD_Decoder(Ker_SSD_Decoder_ArgT  *KerArg0 )
                 // Valid BBOX --> alive
                 bbox[bbn].alive = 1;
                 //Save score always as a Q15
-                bbox[bbn].score = scores[(i*num_classes)+j]*scales[7] << (15 - norms[7]);
+                bbox[bbn].score = scores[(i*num_classes)+j] << 8;
                 bbox[bbn].class = j;
                 // xcnt, ycnt --> Q14
                 // xcnt = (So*O * Sa*Aw)/params.x_scale + Sa*Ax = So*Sa/params.x_scale (O*Aw + x_scale/So * Ax) =
