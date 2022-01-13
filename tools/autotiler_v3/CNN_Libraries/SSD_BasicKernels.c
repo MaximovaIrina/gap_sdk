@@ -96,7 +96,7 @@ static unsigned int Exp_fp_17_15(unsigned int X)
 
 
 void Ker_SSD_Init(Ker_SSD_Init_ArgT  *KerArg0 )
-{    
+{
     // Initialize the output bounding boxes
     *(KerArg0->bbox_idx) = 0;
     bbox_t * bbox = KerArg0->bbox_buf;
@@ -186,7 +186,7 @@ int16_t ioveru( short a_x, short a_y, short a_w, short a_h,
 
     int intersect, runion;
     int x = Max(a_x,b_x);
-    int y = Max(a_y,b_y); 
+    int y = Max(a_y,b_y);
 
     int size_x = Min(a_x+a_w,b_x+b_w) - x;
     int size_y = Min(a_y+a_h,b_y+b_h) - y;
@@ -196,7 +196,7 @@ int16_t ioveru( short a_x, short a_y, short a_w, short a_h,
         return (Thr?0:1);
     }
     else
-        intersect=(size_x*size_y); 
+        intersect=(size_x*size_y);
 
     runion = (a_w*a_h + b_w*b_h) - intersect;
 
@@ -267,7 +267,7 @@ void init_test(bbox_t * boundbxs){
 
 void Ker_SSD_NMS(Ker_SSD_NMS_ArgT  *KerArg0 )
 {
-    
+
     int16_t bbox_idx_max = *(KerArg0->bbox_idx);
     int16_t bbox_max     = KerArg0->n_max_bb;
     int max_detections   = KerArg0->infos[2];
@@ -309,10 +309,13 @@ void Ker_SSD_NMS(Ker_SSD_NMS_ArgT  *KerArg0 )
     non_max_suppress(bbox, non_max_thres, bbox_idx_max);
 
     //Applying max output from TFLITE
-    for(int i=0; i<bbox_max; i++){
-        out_bbox[i] = bbox[i];
-        if  (bbox[i].alive==1 && max_detections) max_detections--;
-        else bbox[i].alive=0;
+    for(int out_idx = 0, i = 0; (i < bbox_max) && (out_idx < max_detections); i++)
+    {
+        if (!bbox[i].alive)
+            continue;
+
+        out_bbox[out_idx] = bbox[i];
+        out_idx++;
     }
 
     #if 0
