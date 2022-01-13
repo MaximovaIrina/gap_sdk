@@ -309,13 +309,19 @@ void Ker_SSD_NMS(Ker_SSD_NMS_ArgT  *KerArg0 )
     non_max_suppress(bbox, non_max_thres, bbox_idx_max);
 
     //Applying max output from TFLITE
-    for(int out_idx = 0, i = 0; (i < bbox_max) && (out_idx < max_detections); i++)
+    int out_idx = 0;
+    for(int i = 0; (i < bbox_max) && (out_idx < max_detections); i++)
     {
         if (!bbox[i].alive)
             continue;
 
         out_bbox[out_idx] = bbox[i];
         out_idx++;
+    }
+
+    for(out_idx; out_idx < max_detections; out_idx++)
+    {
+        out_bbox[out_idx].alive = 0;
     }
 
     #if 0
