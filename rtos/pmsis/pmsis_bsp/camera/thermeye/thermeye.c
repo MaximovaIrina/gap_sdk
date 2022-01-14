@@ -100,7 +100,7 @@ static void __pi_thermeye_start(thermeye_t *thermeye)
     __pi_thermeye_reg_write(thermeye, (uint16_t) ADC_BIAS, 0x00);
     __pi_thermeye_reg_write(thermeye, (uint16_t) EXT_POLAR, 0x08);
     //New thermeye does not need this configs:
-    //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGFID, 0xBD);
+    __pi_thermeye_reg_write(thermeye, (uint16_t) DACGFID, 0xBD);
     //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGSK_A, 0x01);
     //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGSK_B, 0x30);
     __pi_thermeye_reg_write(thermeye, (uint16_t) VTEMP_ADC, 0x60);
