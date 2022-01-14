@@ -99,7 +99,8 @@ static void __pi_thermeye_start(thermeye_t *thermeye)
     __pi_thermeye_reg_write(thermeye, (uint16_t) EXT_CAPA_LD, 0x02);
     __pi_thermeye_reg_write(thermeye, (uint16_t) ADC_BIAS, 0x00);
     __pi_thermeye_reg_write(thermeye, (uint16_t) EXT_POLAR, 0x08);
-    __pi_thermeye_reg_write(thermeye, (uint16_t) DACGFID, 0xBD);
+    //New thermeye does not need this configs:
+    //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGFID, 0xBD);
     //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGSK_A, 0x01);
     //__pi_thermeye_reg_write(thermeye, (uint16_t) DACGSK_B, 0x30);
     __pi_thermeye_reg_write(thermeye, (uint16_t) VTEMP_ADC, 0x60);
@@ -120,13 +121,26 @@ static void __pi_thermeye_start(thermeye_t *thermeye)
     __pi_thermeye_reg_write(thermeye, (uint16_t) EXT_CAPA_LD, 0x00);
 }
 
-static uint32_t __pi_thermeye_trigger_snapshot(thermeye_t *thermeye)
+static uint32_t __pi_thermeye_start_sequencing(thermeye_t *thermeye)
 {
     uint32_t feedback = 0;
     /* Switch on led during image capture. */
     //pi_gpio_pin_write(NULL, GPIO_USER_LED, 1);
 
     __pi_thermeye_reg_write(thermeye, (uint16_t) CONFIG, 0x45);
+    
+    //feedback = __pi_thermeye_reg_read(thermeye, (uint16_t) CONFIG);
+    return feedback;
+}
+
+static uint32_t __pi_thermeye_stop_sequencing(thermeye_t *thermeye)
+{
+    uint32_t feedback = 0;
+    /* Switch on led during image capture. */
+    //pi_gpio_pin_write(NULL, GPIO_USER_LED, 1);
+
+    __pi_thermeye_reg_write(thermeye, (uint16_t) CONFIG, 0x41);
+    
     //feedback = __pi_thermeye_reg_read(thermeye, (uint16_t) CONFIG);
     return feedback;
 }
@@ -292,12 +306,22 @@ static int32_t __pi_thermeye_control(struct pi_device *device, pi_camera_cmd_e c
     case PI_CAMERA_CMD_START:
         __pi_thermeye_start(thermeye);
         pi_cpi_control_start(&(thermeye->cpi_device));
-        __pi_thermeye_trigger_snapshot(thermeye);
+        __pi_thermeye_start_sequencing(thermeye);
         break;
 
     case PI_CAMERA_CMD_STOP:
         pi_cpi_control_stop(&(thermeye->cpi_device));
         __pi_thermeye_stop(thermeye);
+        break;
+
+    case PI_CAMERA_CMD_CONTINUE_MODE:
+        __pi_thermeye_stop_sequencing(thermeye);
+        pi_cpi_control_stop(&(thermeye->cpi_device));
+        break;
+
+    case PI_CAMERA_CMD_TRIGGER_MODE:
+        pi_cpi_control_start(&(thermeye->cpi_device));
+        __pi_thermeye_start_sequencing(thermeye);
         break;
 
     default:
@@ -311,7 +335,6 @@ static void __pi_thermeye_capture_async(struct pi_device *device, void *buffer,
 {
     thermeye_t *thermeye = (thermeye_t *) device->data;
     pi_cpi_capture_async(&(thermeye->cpi_device), buffer, bufferlen, task);
-    //__pi_thermeye_trigger_snapshot(thermeye);
 }
 
 static int32_t __pi_thermeye_reg_get(struct pi_device *device, uint32_t addr, uint8_t *value)
