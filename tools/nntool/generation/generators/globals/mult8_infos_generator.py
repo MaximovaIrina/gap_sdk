@@ -66,7 +66,8 @@ def mult8_infos_generator(gen, node, qrec, pnode, fnode) -> bool:
                   extra1=qrec.scale_in_mul_biases_q.qbiases[0],
                   extra2=qrec.scale_in_mul_biases_q.qnorms[0],
                   extra3=qrec.scale_mul_biases_q.qbiases[0],
-                  extra4=qrec.scale_mul_biases_q.qnorms[0])
+                  extra4=qrec.scale_mul_biases_q.qnorms[0],
+                  scaled_idx=qrec.scaled_idx) # HACK: freeze MatAdd order of arguments
     elif isinstance(pnode, PaddedAddFusionParameters):
         cnodes = node.contained_nodes()
         quants = [gen.G.quantization[NodeId(node, fnode)] for fnode in cnodes]
@@ -126,17 +127,19 @@ def gen_constant(gen, pnode, cache_node, const_type, extra_name=''):
     return cname, file_name
 
 
-def act_infos(gen, pnode, fnode, act_params, act_q, extra1=0, extra2=0, extra3=0, extra4=0, extra_name=''):
+def act_infos(gen, pnode, fnode, act_params, act_q, extra1=0, extra2=0, extra3=0, extra4=0, extra_name='', **kwargs):
     if isinstance(pnode, FilterParameters):
         comment = str.format("BiasQ: {}", extra1)
-    elif isinstance(pnode, MatrixAddParameters):
-        comment = str.format("In1Scale: {} In1ScaleN: {} OutScale: {} OutScaleN: {}",
-                             extra1, extra2, extra3, extra4)
+    elif isinstance(pnode, MatrixAddParameters) and "scaled_idx" in kwargs: # HACK: freeze MatAdd order of arguments
+        comment = str.format("ScaledIdx: {} In1Scale: {} In1ScaleN: {} OutScale: {} OutScaleN: {}",
+                                kwargs["scaled_idx"], extra1, extra2, extra3, extra4)
     else:
         comment = ""
 
-    if act_params is None:
+    if act_params is None and len(kwargs) == 0:
         contents = np.array([0, 0, 0, 0, 0, extra1, extra2, extra3, extra4], dtype=np.int8)
+    elif isinstance(pnode, MatrixAddParameters) and "scaled_idx" in kwargs: # HACK: freeze MatAdd order of arguments
+        contents = np.array([0, 0, 0, 0, kwargs["scaled_idx"], extra1, extra2, extra3, extra4], dtype=np.int8)
     elif isinstance(act_params, ReluActivationParameters):
         actscale = act_q.scale_mul_biases_q.qbiases[0]
         actscalen = act_q.scale_mul_biases_q.qnorms[0]

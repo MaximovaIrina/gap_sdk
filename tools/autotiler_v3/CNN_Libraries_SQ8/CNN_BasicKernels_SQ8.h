@@ -17,6 +17,9 @@
 #define AT_INF_B0		3
 #define AT_INF_C0		4
 
+// HACK: freeze MatAdd order of arguments
+#define AT_ScaledIdx	4
+
 #define AT_INF_BIASN		5
 #define AT_INF_IN1SCALE		5
 #define AT_INF_SCALE		5

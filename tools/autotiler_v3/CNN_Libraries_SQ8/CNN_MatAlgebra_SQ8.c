@@ -30,8 +30,17 @@ static inline unsigned int __attribute__((always_inline)) ChunkSize(unsigned int
 void KerParMatAdd_SQ8(KerMat3_SQ8_T *Arg)
 
 {
-	signed char * __restrict__ In1	= Arg->In1;
-	signed char * __restrict__ In2	= Arg->In2;
+	// HACK: freeze MatAdd order of arguments
+	unsigned int ScaledIdx =  ((unsigned char *)Arg->Infos)[AT_ScaledIdx];
+	signed char * __restrict__ In1 = 0;
+	signed char * __restrict__ In2 = 0;
+	if (ScaledIdx == 0) {
+		In1 = Arg->In1;
+		In2 = Arg->In2;
+	} else {
+		In1 = Arg->In2;
+		In2 = Arg->In1;
+	}
 	signed char * __restrict__ Out	= Arg->Out;
 	int W				= Arg->W;
 	int H				= Arg->H;

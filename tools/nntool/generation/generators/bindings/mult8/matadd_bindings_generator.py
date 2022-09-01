@@ -47,11 +47,14 @@ def set_matadd_bindings(gen, node, step_idx, in_eparams, out_eparams, cname, qre
     del step_idx
     if out_q is None:
         out_q = qrec
-    scaled_idx = qrec.scaled_idx
-    not_scaled_idx = 0 if scaled_idx else 1
+    # HACK: freeze MatAdd order of arguments
+    # scaled_idx = qrec.scaled_idx
+    # not_scaled_idx = 0 if scaled_idx else 1
+    scaled_idx, not_scaled_idx = 0, 1
+
     gen.bindings.append(
-        CommentBindingList("Node {} in1q {} in2q {} outq {}", cname,
-                           qrec.in_qs[scaled_idx], qrec.in_qs[not_scaled_idx], out_q.out_qs[0])
+        CommentBindingList("Node {} in1q {} in2q {} outq {} scaled_idx {}", cname,
+                           qrec.in_qs[0], qrec.in_qs[1], out_q.out_qs[0], qrec.scaled_idx)
     )
     if isinstance(node, PaddedAddFusionParameters):
         gen.bindings.append(
